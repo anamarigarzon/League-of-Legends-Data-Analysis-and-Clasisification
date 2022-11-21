@@ -1,2 +1,2 @@
-# League-of-Legends-Data-Analysis-and-Clasisification
+# League of Legends Data Analysis and Clasisification
 Final project of the Statistical Data Analysis class, developed by Ana María Garzón. Gabriela Linares, Juan Manuel Dávila and Kiara Nicole Velásquez, Applied Mathematics and Computer Science, Universidad del Rosario. Data Analysis and Classification of the League of Legends database: https://www.kaggle.com/datasets/ezalos/lol-victory-prediction-from-champion-selection
