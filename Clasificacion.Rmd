@@ -1,0 +1,300 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+0. Procesar datos
+```{r}
+library(caret)
+library(ROCR)
+library(class)
+library(ggplot2)
+library(factoextra)
+library(naivebayes)
+#library(dplyr)
+#library(e1071)
+library(MASS)
+
+
+setwd("D:/Escritorio/Universidad/AED/archive/12.12.-splits")
+Data <- read.csv("Dataframe_PCA.csv",header=TRUE,sep=",",fill = TRUE)
+
+```
+
+#Para cada clasificacion calcular el ECM(costo esperado de clasificacion incorrecta )¿Cual minimiza este costo ? 
+
+#hacer TPM(total probability mistake) y calcular del minimos de esos el OER(optimal error ride)
+#¿AER y APER?
+
+#CLASIFICADORES LINEALES
+  #Regresion logistica ->
+  #Fisher's Method for Discriminating-> lda
+
+#CLASIFICADORES NO LINEALES
+  #Clasificador Bayesiano Ingenuo (Naive Bayes Classifier)
+  #k - Vecinos Cercanos (k-NN Classifier)
+
+
+0.1 Limpiar data ->solo correr una vez
+```{r}
+#Adición de las columnas que recogen las sumas (experiencia, daños y control)
+Data$team_100_xp = Data$Player_1_xp + Data$Player_2_xp + Data$Player_3_xp +
+  Data$Player_4_xp + Data$Player_5_xp
+Data$team_200_xp = Data$Player_6_xp + Data$Player_7_xp + Data$Player_8_xp +
+  Data$Player_9_xp + Data$Player_10_xp
+
+Data$team_100_dmg_dealt = Data$Player_1_dmg_dealt + Data$Player_2_dmg_dealt + Data$Player_3_dmg_dealt +
+  Data$Player_4_dmg_dealt + Data$Player_5_dmg_dealt
+Data$team_200_dmg_dealt = Data$Player_6_dmg_dealt + Data$Player_7_dmg_dealt + Data$Player_8_dmg_dealt +
+  Data$Player_9_dmg_dealt + Data$Player_10_dmg_dealt
+
+Data$team_100_dmg_taken = Data$Player_1_dmg_taken + Data$Player_2_dmg_taken + Data$Player_3_dmg_taken +
+  Data$Player_4_dmg_taken + Data$Player_5_dmg_taken
+Data$team_200_dmg_taken = Data$Player_6_dmg_taken + Data$Player_7_dmg_taken + Data$Player_8_dmg_taken +
+  Data$Player_9_dmg_taken + Data$Player_10_dmg_taken
+
+Data$team_100_time_ccing = Data$Player_1_time_ccing + Data$Player_2_time_ccing + Data$Player_3_time_ccing +
+  Data$Player_4_time_ccing + Data$Player_5_time_ccing
+Data$team_200_time_ccing = Data$Player_6_time_ccing + Data$Player_7_time_ccing + Data$Player_8_time_ccing +
+  Data$Player_9_time_ccing + Data$Player_10_time_ccing
+
+#Retirar las singulares
+Data$Player_1_gold = NULL
+Data$Player_2_gold = NULL
+Data$Player_3_gold = NULL
+Data$Player_4_gold = NULL
+Data$Player_5_gold = NULL
+Data$Player_6_gold = NULL
+Data$Player_7_gold = NULL
+Data$Player_8_gold = NULL
+Data$Player_9_gold = NULL
+Data$Player_10_gold = NULL
+
+Data$Player_1_xp = NULL
+Data$Player_2_xp = NULL
+Data$Player_3_xp = NULL
+Data$Player_4_xp = NULL
+Data$Player_5_xp = NULL
+Data$Player_6_xp = NULL
+Data$Player_7_xp = NULL
+Data$Player_8_xp = NULL
+Data$Player_9_xp = NULL
+Data$Player_10_xp = NULL
+
+Data$Player_1_dmg_dealt = NULL
+Data$Player_2_dmg_dealt = NULL
+Data$Player_3_dmg_dealt = NULL
+Data$Player_4_dmg_dealt = NULL
+Data$Player_5_dmg_dealt = NULL
+Data$Player_6_dmg_dealt = NULL
+Data$Player_7_dmg_dealt = NULL
+Data$Player_8_dmg_dealt = NULL
+Data$Player_9_dmg_dealt = NULL
+Data$Player_10_dmg_dealt = NULL
+
+Data$Player_1_dmg_taken = NULL
+Data$Player_2_dmg_taken = NULL
+Data$Player_3_dmg_taken = NULL
+Data$Player_4_dmg_taken = NULL
+Data$Player_5_dmg_taken = NULL
+Data$Player_6_dmg_taken = NULL
+Data$Player_7_dmg_taken = NULL
+Data$Player_8_dmg_taken = NULL
+Data$Player_9_dmg_taken = NULL
+Data$Player_10_dmg_taken = NULL
+
+Data$Player_1_time_ccing = NULL
+Data$Player_2_time_ccing = NULL
+Data$Player_3_time_ccing = NULL
+Data$Player_4_time_ccing = NULL
+Data$Player_5_time_ccing = NULL
+Data$Player_6_time_ccing = NULL
+Data$Player_7_time_ccing = NULL
+Data$Player_8_time_ccing = NULL
+Data$Player_9_time_ccing = NULL
+Data$Player_10_time_ccing = NULL
+
+pca = prcomp(Data, scale = TRUE)
+summary(pca)
+fviz_eig(pca)
+
+
+#Pasar a binario TeamVictory
+
+Data$teamVictory<-apply(Data["teamVictory"],1,function(x){if((x/100)-1 == 1) TRUE else FALSE})
+Data
+
+#Equipo 1 -> 0
+#Equipo 2 -> 1
+
+```
+
+
+Informacion general Data:
+
+#Datos generales: gameId,matchId,gameDuration,teamVictory
+#Equipo 1: team_100_gold,Player_1_pick,Player_1_team,Player_1_position,Player_1_gold,Player_1_xp,Player_1_dmg_dealt,Player_1_dmg_taken,Player_1_time_ccing (del 1-5)
+#Equipo 2: team_200_gold, Player_6_pick,Player_6_team,Player_6_position,Player_6_gold,Player_6_xp,Player_6_dmg_dealt,Player_6_dmg_taken,Player_6_time_ccing (del 6-10)
+
+Dividir los datos en entrenamiento y prueba 
+```{r}
+set.seed(1234)
+
+train <- sample(1:dim(Data)[1],0.7*dim(Data)[1])
+
+Data.test <- Data[train,]
+Data.train <- Data[-train,]
+
+Data.test
+Data.train
+
+ytest <- Data$teamVictory[train]
+ytrain <- Data$teamVictory[-train]
+
+
+```
+
+
+
+### Modelos Lineales
+
+1.Regresion logistica : predice variables categoricas a partir del uso de la funcion logistica
+# Regresion Logistica sin PCA
+```{r}
+#1.1 Un modelo logístico ajustado con la función glm.
+
+modelGLM <- glm(teamVictory ~ . , family = binomial, data= Data.train)
+summary(modelGLM)
+
+#1.2 Variables significativas:
+
+GLMSignificantVars <- summary(modelGLM)$coeff[-1,4] <0.001 #valor p < 0.01 -> menor = mayor significancia
+names(GLMSignificantVars)[GLMSignificantVars == TRUE]
+
+#1.3 Prediccion del modelo logistico mediante predict
+
+#Matriz de confusion y error
+predGLM <- predict(modelGLM,newdata = Data.test, type="response")
+
+confusionMatrix(as.factor(ifelse(Data.test$teamVictory==TRUE, 1, 0)), as.factor(round(predGLM)))
+
+
+#1.4 Error
+
+#NOTE QUE LE MODELO FUE MUY BUENO .... sin embargo aprovvechamos el algoritmo de pca y la limpieza de datos para pasar de 54 variables, a solamente 4. De aqui en adleante, todos los modelos lo haremos con el dataset de 4 variables.
+
+#1.5 Curva ROC para ilustrar la habilidad del sistema de clasificación 
+
+plot(performance(ROCR::prediction(predGLM,ytest), "tpr", "fpr"))
+```
+
+
+
+
+# Regresion Logistica con PCA
+```{r}
+#1.1 Un modelo logístico ajustado con la función glm.
+
+modelGLMPCA <- glm(teamVictory ~  team_100_gold + team_200_gold + team_100_xp + team_200_xp , family = binomial, data= Data.train)#Modelos lineales generalizados 
+
+summary(modelGLMPCA)
+
+
+#1.2 Prediccion del modelo logistico mediante predict
+
+#Matriz de confusion y error
+
+
+predGLMPCA <- predict(modelGLMPCA,newdata = Data.test, type="response")
+
+confusionMatrix(as.factor(ifelse(Data.test$teamVictory==TRUE, 1, 0)), as.factor(round(predGLMPCA)))
+
+#1.3 Curva ROC para ilustrar la habilidad del sistema de clasificación 
+
+plot(performance(ROCR::prediction(predGLMPCA,ytest), "tpr", "fpr"))
+```
+
+
+NOTE QUE LE MODELO FUE MUY BUENO .... sin embargo aprovvechamos el algoritmo de pca y la limpieza de datos para pasar de 54 variables, a solamente 4. De aqui en adleante, todos los modelos lo haremos con el dataset de 4 variables.
+
+#LDA
+
+
+```{r}
+#2.1 Fisher's Method for Discriminating con la función lda.
+
+set.seed(1234)
+modelLDA <- lda(teamVictory ~  team_100_gold + team_200_gold + team_100_xp + team_200_xp, Data.train)
+modelLDA
+
+#2.2 Prediccion del modelo  mediante predict
+
+
+predLDA <- predict(modelLDA,newdata = Data.test, type="response")
+confusionMatrix(predLDA$class, as.factor(ytest))
+
+
+```
+
+#### Modelos No Lineales
+# Naives Bayes
+3. Clasificador bayesiano: fundamentalmente probabilistico y basado en el teorema de bayes( probabilidad condicional de un evento aleatorio A dado B )
+
+Este modelo asume que todas las variables predictoras tiene total independencia lineal 
+
+
+```{r}
+
+#3.1 Implementacion clasificador bayesiano  usando la funcion naive_bayes del paquete naivebayes
+
+set.seed(1234)
+modelNaive <-  naive_bayes(formula=teamVictory ~  team_100_gold + team_200_gold + team_100_xp + team_200_xp, data = Data.train)
+summary(modelNaive)
+
+#3.2 Prediccion del modelo
+
+predNaive <- predict(modelNaive, Data.test)
+confusionMatrix(predNaive, as.factor(ytest))
+
+```
+
+
+# KNN
+
+K-vecinos cercanos: Basa su entrenamiento en el calculo de las distancias de un nuevo dato o dato al que se desee asignar a una clase, con la mayoría de clases a las que pertenezcan sus k vecinos más cercanos, siendo k un parámetro del algoritmo.
+
+
+```{r}
+
+#4.1 Constructor de del clasificador con la funcion knn del paquete class.
+set.seed(1234)
+modelKnn <- knn(train = Data.train, test=Data.test, cl=Data.train$teamVictory ,k = 2)
+
+#4.2 Aprendizaje no supervisado, el crea grupos en este caso 2
+confusionMatrix(table(modelKnn ,ytest))
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
