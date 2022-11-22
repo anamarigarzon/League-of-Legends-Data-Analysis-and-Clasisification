@@ -1,26 +1,32 @@
-#fighters <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/git/League-of-Legends-Data-Analysis-and-Clasisification/champs/
+#champions <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/git/League-of-Legends-Data-Analysis-and-Clasisification/champs/
                      #Mage.csv")
 library(dplyr)
+library(plyr)
 library(MASS)
 library(caret)
 library(ggplot2)
 fighters <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Fighter.csv", header = TRUE)
+mage <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Mage.csv", header = TRUE)
+assassin <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Assassin.csv", header = TRUE)
+tank <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Tank.csv", header = TRUE)
+support <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Support.csv", header = TRUE)
+marksman <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Marksman.csv", header = TRUE)
 
-fighters$tag1 = NULL
-fighters$tag2 = NULL
-fighters$name = NULL
-fighters$key = NULL
+champions <- rbind(fighters, mage, assassin, tank, support, marksman)
+champions$tag1 = NULL
+champions$tag2 = NULL
+champions$name = NULL
+champions$key = NULL
 #Como crit y critperlevel son siempre cero, se borran o R pone problema
-fighters$crit = NULL
-fighters$critperlevel = NULL
-fighters$good = (fighters$winrate >= 0.5)
-fighters$good = as.numeric(as.logical(fighters$good))
+champions$crit = NULL
+champions$critperlevel = NULL
+champions$good = (champions$winrate >= 0.5)
 
-set.seed(2003)
-fighters$sample <- sample(c(TRUE, FALSE), nrow(fighters), replace=TRUE, prob=c(0.8,0.2))
+#set.seed(2003)
+champions$sample <- sample(c(TRUE, FALSE), nrow(champions), replace=TRUE, prob=c(0.8,0.2))
 
-entrenamiento  <- fighters[fighters$sample == TRUE,]
-test   <- fighters[fighters$sample == FALSE,]
+entrenamiento  <- champions[champions$sample == TRUE,]
+test   <- champions[champions$sample == FALSE,]
 entrenamiento$sample = NULL
 test$sample = NULL
 
