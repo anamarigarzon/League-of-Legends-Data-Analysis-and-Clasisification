@@ -15,7 +15,7 @@ champions$key = NULL
 #Como crit y critperlevel son siempre cero, se borran o R pone problema
 champions$crit = NULL
 champions$critperlevel = NULL
-
+champions
 set.seed(2003)
 champions$sample <- sample(c(TRUE, FALSE), nrow(champions), replace=TRUE, prob=c(0.8,0.2))
 

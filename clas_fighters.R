@@ -5,6 +5,7 @@ library(plyr)
 library(MASS)
 library(caret)
 library(ggplot2)
+
 fighters <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Fighter.csv", header = TRUE)
 mage <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Mage.csv", header = TRUE)
 assassin <- read.csv("/Users/mac/Documents/Juan Manuel/UR/2022-2/AED/Proyecto/champs/Assassin.csv", header = TRUE)
@@ -38,3 +39,7 @@ prediccion <- predict(modelo, test)
 test_labels=c(test$good)
 matriz_c = confusionMatrix(as.factor(prediccion$class), as.factor(test_labels))
 matriz_c$table
+
+tab_fin_test=as_tibble(matriz_c$table)
+colnames(tab_fin_test)=c("Target","Prediction","N")
+plot_confusion_matrix(tab_fin_test)
